@@ -1,0 +1,7 @@
+max_width = 100
+hard_tabs = true
+tab_spaces = 4
+reorder_imports = true
+reorder_modules = true
+remove_nested_parens = true
+edition = "2018"
