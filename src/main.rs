@@ -1,5 +1,5 @@
 use env_logger;
-use tera::{compile_templates};
+use tera::{compile_templates, Context};
 use actix_web::{error, http, middleware, server, App, Error, HttpResponse, State};
 use actix_web::fs::StaticFiles;
 
@@ -8,13 +8,16 @@ struct AppState {
 }
 
 fn index(state: State<AppState>) -> Result<HttpResponse, Error> {
-	render_template(state, "index.html")
+	let mut ctx = Context::new();
+	ctx.insert("databases", &vec!["some", "some1", "some2", "some4"]);
+
+	render_template(state, "index.html", &mut ctx)
 }
 
-fn render_template(state: State<AppState>, template: &str) -> Result<HttpResponse, Error> {
+fn render_template(state: State<AppState>, template: &str, context : &mut Context) -> Result<HttpResponse, Error> {
 	let s = state
 		.template
-		.render(template, &tera::Context::new())
+		.render(template, &context)
 		.map_err(|_| error::ErrorInternalServerError("Template error"))?;
 	Ok(HttpResponse::Ok().content_type("text/html").body(s))
 }

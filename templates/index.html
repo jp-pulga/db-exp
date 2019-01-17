@@ -1,4 +1,27 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>It works!</h1>
+
+<div class="container">
+	<div class="row mt-3">
+		{% for db in databases %}
+		<div class="col col-3 mt-3">
+			<div class="card bg-dark text-white" style="width: 16rem;">
+				<img src="http://pluspng.com/img-png/free-png-plus-sign-plus-icon-512.png" alt="+" height="248">
+				<div class="card-body">
+					<h5 class="card-title">{{ db }}</h5>
+				</div>
+			</div>
+		</div>
+		{% endfor %}
+
+		<div class="col col-3 mt-3">
+			<div class="card bg-dark text-white" style="width: 16rem;">
+				<img src="http://pluspng.com/img-png/free-png-plus-sign-plus-icon-512.png" alt="+" height="248">
+				<div class="card-body">
+					<h5 class="card-title">Connect</h5>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
 {% endblock content %}
