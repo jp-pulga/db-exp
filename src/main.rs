@@ -1,20 +1,33 @@
+use actix_web::fs::StaticFiles;
+use actix_web::{error, http, middleware, server, App, Error, HttpResponse, State};
 use env_logger;
 use tera::{compile_templates, Context};
-use actix_web::{error, http, middleware, server, App, Error, HttpResponse, State};
-use actix_web::fs::StaticFiles;
+
+mod db;
+use crate::db::ConnectionControler;
 
 struct AppState {
+	controler: ConnectionControler,
 	template: tera::Tera,
 }
 
 fn index(state: State<AppState>) -> Result<HttpResponse, Error> {
 	let mut ctx = Context::new();
-	ctx.insert("databases", &vec!["some", "some1", "some2", "some4"]);
+	let mut keys = Vec::with_capacity(state.controler.connections.keys().len());
+	for key in state.controler.connections.keys() {
+		keys.push(key);
+	}
+
+	ctx.insert("databases", &keys);
 
 	render_template(state, "index.html", &mut ctx)
 }
 
-fn render_template(state: State<AppState>, template: &str, context : &mut Context) -> Result<HttpResponse, Error> {
+fn render_template(
+	state: State<AppState>,
+	template: &str,
+	context: &mut Context,
+) -> Result<HttpResponse, Error> {
 	let s = state
 		.template
 		.render(template, &context)
@@ -29,7 +42,10 @@ fn main() {
 	server::new(|| {
 		let tera = compile_templates!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/**/*"));
 
-		App::with_state(AppState { template: tera })
+		App::with_state(AppState {
+				controler: ConnectionControler::init(),
+				template: tera
+			})
 			.middleware(middleware::Logger::default())
 			.handler(
 				"/static",
