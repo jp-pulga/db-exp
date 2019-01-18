@@ -1,59 +1,37 @@
+use actix::Addr;
 use actix_web::fs::StaticFiles;
-use actix_web::{error, http, middleware, server, App, Error, HttpResponse, State};
+use actix_web::{http, middleware, server, App};
 use env_logger;
-use tera::{compile_templates, Context};
 
 mod db;
-use crate::db::ConnectionControler;
+mod handlers;
+use crate::handlers::*;
 
-struct AppState {
-	controler: ConnectionControler,
-	template: tera::Tera,
-}
-
-fn index(state: State<AppState>) -> Result<HttpResponse, Error> {
-	let mut ctx = Context::new();
-	let mut keys = Vec::with_capacity(state.controler.connections.keys().len());
-	for key in state.controler.connections.keys() {
-		keys.push(key);
-	}
-
-	ctx.insert("databases", &keys);
-
-	render_template(state, "index.html", &mut ctx)
-}
-
-fn render_template(
-	state: State<AppState>,
-	template: &str,
-	context: &mut Context,
-) -> Result<HttpResponse, Error> {
-	let s = state
-		.template
-		.render(template, &context)
-		.map_err(|_| error::ErrorInternalServerError("Template error"))?;
-	Ok(HttpResponse::Ok().content_type("text/html").body(s))
+pub struct AppState {
+	pub db: Addr<db::DBExecutor>,
 }
 
 fn main() {
 	::std::env::set_var("RUST_LOG", "actix_web=info");
 	env_logger::init();
+	let sys = actix::System::new("db-explorer");
 
-	server::new(|| {
-		let tera = compile_templates!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/**/*"));
+	let addr = db::initialize_db_exp_connection();
 
-		App::with_state(AppState {
-				controler: ConnectionControler::init(),
-				template: tera
-			})
+	server::new(move || {
+		App::with_state(AppState { db: addr.clone() })
 			.middleware(middleware::Logger::default())
 			.handler(
 				"/static",
 				StaticFiles::new("static").unwrap().show_files_listing(),
 			)
-			.resource("/", |r| r.method(http::Method::GET).with(index))
+			.resource("/", |r| {
+				r.method(http::Method::GET).with(dashboard::show_dashboard)
+			})
 	})
 	.bind("127.0.0.1:8080")
 	.expect("Could not bind to port 8080")
 	.run();
+
+	let _ = sys.run();
 }

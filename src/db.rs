@@ -1,39 +1,17 @@
-use sqlite;
+use actix::{Actor, Addr, SyncContext, SyncArbiter};
+use num_cpus;
+use r2d2;
+use r2d2_sqlite;
 
-use std::collections::HashMap;
-use std::path::PathBuf;
+pub struct DBExecutor(pub r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>);
 
-use serde_derive::Serialize;
-
-/// Information about some database
-#[derive(Hash, Eq, PartialEq, Debug, Serialize)]
-pub struct DBInfo {
-	pub alias: String,
-	pub path: PathBuf,
+impl Actor for DBExecutor {
+	type Context = SyncContext<Self>;
 }
 
-/// Handles all connetion info
-pub struct ConnectionControler {
-	pub connections: HashMap<DBInfo, sqlite::Connection>,
-}
+pub fn initialize_db_exp_connection() -> Addr<DBExecutor> {
+	let manager = r2d2_sqlite::SqliteConnectionManager::file("weather.db");
+	let pool = r2d2::Pool::<r2d2_sqlite::SqliteConnectionManager>::new(manager).unwrap();
 
-impl ConnectionControler {
-	pub fn init() -> Self {
-		let mut c: ConnectionControler = ConnectionControler {
-			connections: HashMap::new(),
-		};
-		c.connect("db-exp", "db.sqlite3");
-
-		c
-	}
-
-	pub fn connect(&mut self, alias: &str, path: &str) {
-		let c = sqlite::open(path).unwrap();
-		let inf = DBInfo {
-			alias: alias.to_string(),
-			path: PathBuf::from(path),
-		};
-
-		self.connections.insert(inf, c);
-	}
+	SyncArbiter::start(num_cpus::get(), move || DBExecutor(pool.clone()))
 }
