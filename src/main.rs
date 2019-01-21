@@ -1,3 +1,5 @@
+#![feature(generic_associated_types)]
+
 use actix::Addr;
 use actix_web::fs::StaticFiles;
 use actix_web::{http, middleware, server, App};

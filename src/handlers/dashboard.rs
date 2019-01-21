@@ -1,9 +1,8 @@
 use crate::db::DBExecutor;
 use crate::AppState;
 use actix::{Handler, Message};
-use actix_web::{Error, HttpResponse, Query, State};
+use actix_web::{Error, HttpResponse, State};
 use askama::Template;
-use std::collections::HashMap;
 
 /// Dashboard specific information
 /// THis store cards info
@@ -16,11 +15,11 @@ pub struct Dashboard<'a> {
 pub enum DashboardQuerys { }
 
 impl Message for DashboardQuerys {
-	type Result = Result<Vec<&'a Dashboard>, Error>;
+	type Result<'a> = Result<Vec<Dashboard<'a>>, Error>;
 }
 
 impl Handler<DashboardQuerys> for DBExecutor {
-	type Result = Result<Vec<&'a Dashboard>, Error>;
+	type Result<'a> = Result<Vec<Dashboard<'a>>, Error>;
 
 	fn handle(&mut self, msg: DashboardQuerys, _: &mut Self::Context) -> Self::Result {
 		let conn: r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager> = self.0.get()?;
